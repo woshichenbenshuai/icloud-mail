@@ -11,7 +11,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:${ICLOUD_API_PORT:-8080}:8080"
+      - "127.0.0.1:${ICLOUD_API_PORT:-17004}:8080"
       - "127.0.0.1:${ICLOUD_API_IMAPS_PORT:-1993}:1993"
     environment:
       GIN_MODE: release

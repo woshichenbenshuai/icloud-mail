@@ -218,10 +218,10 @@ curl -X POST 'https://mail.example.com/ADMIN_PATH/api/v1/pool/aliases/batch/jobs
 cp -n .env.example .env
 docker compose up -d --build --wait
 docker compose ps
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-新安装使用自己的 Web/API 域名，例如 `mail.example.com`。HTTPS 反向代理转发到 `127.0.0.1:8788`；公网启用 HTTPS Cookie。公开 IMAPS 使用独立域名及 TLS 证书，具体见 [公网部署](PUBLIC.md)。
+新安装使用自己的 Web/API 域名，例如 `mail.example.com`。HTTPS 反向代理转发到 `127.0.0.1:17004`；公网启用 HTTPS Cookie。公开 IMAPS 使用独立域名及 TLS 证书，具体见 [公网部署](PUBLIC.md)。
 
 获取管理入口和管理员密码：
 

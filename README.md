@@ -70,7 +70,7 @@ docker compose ps
 
 ### 2. 打开控制面板
 
-使用示例配置时，后台地址为 **http://127.0.0.1:8788/admin/**，用户名为 `admin`。查看首次生成的密码：
+使用示例配置时，后台地址为 **http://127.0.0.1:17004/admin/**，用户名为 `admin`。查看首次生成的密码：
 
 ```sh
 docker compose exec -T icloud-api cat /app/keys/admin-password
@@ -79,7 +79,7 @@ docker compose exec -T icloud-api cat /app/keys/admin-password
 如果部署在远程服务器，在自己的电脑建立 SSH 隧道后访问上面的地址：
 
 ```sh
-ssh -N -L 127.0.0.1:8788:127.0.0.1:8788 USER@SERVER
+ssh -N -L 127.0.0.1:17004:127.0.0.1:17004 USER@SERVER
 ```
 
 需要公网域名、HTTPS、Cloudflare 或宝塔部署时，参阅 [公网部署指南](docs/PUBLIC.md)。

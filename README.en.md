@@ -69,7 +69,7 @@ By default, this pulls `ghcr.io/t508708/icloud-mail:latest` and the accompanying
 
 ### 2. Open the Dashboard
 
-With the example configuration, the dashboard is at **http://127.0.0.1:8788/admin/** and the username is `admin`. Retrieve the password generated on first startup:
+With the example configuration, the dashboard is at **http://127.0.0.1:17004/admin/** and the username is `admin`. Retrieve the password generated on first startup:
 
 ```sh
 docker compose exec -T icloud-api cat /app/keys/admin-password
@@ -78,7 +78,7 @@ docker compose exec -T icloud-api cat /app/keys/admin-password
 For a remote server, establish an SSH tunnel from your own computer, then open the address above:
 
 ```sh
-ssh -N -L 127.0.0.1:8788:127.0.0.1:8788 USER@SERVER
+ssh -N -L 127.0.0.1:17004:127.0.0.1:17004 USER@SERVER
 ```
 
 For a public domain, HTTPS, Cloudflare, or BaoTa deployment, see the [public deployment guide](docs/PUBLIC.md).

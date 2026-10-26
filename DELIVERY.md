@@ -13,7 +13,7 @@ cp -n .env.example .env
 docker compose pull
 docker compose up -d --wait
 docker compose ps
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS http://127.0.0.1:17004/healthz
 ```
 
 基础编排默认使用 `ghcr.io/t508708/icloud-mail:latest` 与 `ghcr.io/t508708/icloud-mail-postgres:latest`。可在 `.env` 中用 `ICLOUD_API_IMAGE` 和 `ICLOUD_API_POSTGRES_IMAGE` 覆盖镜像或固定 digest；应用运行仍需访问 Apple/上游 IMAP。
@@ -28,10 +28,10 @@ cd icloud-mail
 cp -n .env.example .env
 docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait
 docker compose -f compose.yaml -f compose.build.yaml ps
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-构建阶段需要访问 Docker 基础镜像、Go 模块和 npm 依赖源。复制示例配置后，HTTP 发布到 `127.0.0.1:8788`，IMAPS 发布到 `127.0.0.1:1993`。前端 JS/CSS 随镜像本地提供；运行时仍需访问 Apple/iCloud 或配置的上游 IMAP 服务。
+构建阶段需要访问 Docker 基础镜像、Go 模块和 npm 依赖源。复制示例配置后，HTTP 发布到 `127.0.0.1:17004`，IMAPS 发布到 `127.0.0.1:1993`。前端 JS/CSS 随镜像本地提供；运行时仍需访问 Apple/iCloud 或配置的上游 IMAP 服务。
 
 ## 首次登录
 
@@ -42,12 +42,12 @@ docker compose exec -T icloud-api cat /app/keys/admin-password
 docker compose exec -T icloud-api cat /app/keys/admin-path
 ```
 
-用户名为 `admin`。使用 `.env.example` 时管理入口为 `http://127.0.0.1:8788/admin/`。首次接入在主号管理中添加 Apple 账号并完成连接；直连 iCloud IMAP 使用 Apple App 专用密码，第三方 IMAP 使用该服务自己的凭据。
+用户名为 `admin`。使用 `.env.example` 时管理入口为 `http://127.0.0.1:17004/admin/`。首次接入在主号管理中添加 Apple 账号并完成连接；直连 iCloud IMAP 使用 Apple App 专用密码，第三方 IMAP 使用该服务自己的凭据。
 
 云服务器可在自己的电脑建立 SSH 隧道：
 
 ```sh
-ssh -N -L 127.0.0.1:8788:127.0.0.1:8788 USER@SERVER
+ssh -N -L 127.0.0.1:17004:127.0.0.1:17004 USER@SERVER
 ```
 
 然后用本地浏览器访问管理入口。公网 HTTPS、域名与证书见 [公网部署](docs/PUBLIC.md)；宝塔多文件编排的兼容方式也在该文档中。

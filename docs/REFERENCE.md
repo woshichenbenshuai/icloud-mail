@@ -4,7 +4,7 @@
 
 项目地址：<https://github.com/t508708/icloud-mail>。本项目基于 [mangobubu/icloud-api](https://github.com/mangobubu/icloud-api)；来源与当前许可状态见 [NOTICE.md](../NOTICE.md)。
 
-包含 Web 控制面板、项目 Key、批量自动取号、幂等领取、确认/释放/续期、凭据联动轮换和定时创建。首次安装和交付包使用请先阅读 [交付与安装](../DELIVERY.md)，邮箱池说明见 [邮箱池](POOL.md)。复制 `.env.example` 后 HTTP 端口为 `8788`；不使用环境文件时 Compose 的默认端口为 `8080`。
+包含 Web 控制面板、项目 Key、批量自动取号、幂等领取、确认/释放/续期、凭据联动轮换和定时创建。首次安装和交付包使用请先阅读 [交付与安装](../DELIVERY.md)，邮箱池说明见 [邮箱池](POOL.md)。复制 `.env.example` 后 HTTP 端口为 `17004`；不使用环境文件时 Compose 的默认宿主机端口为 `17004`。
 
 本服务把 iCloud 隐私邮箱的新邮件归档到本地，并且只向外提供两种取件能力：
 
@@ -47,10 +47,10 @@ cd icloud-mail
 cp -n .env.example .env
 docker compose up -d --build --wait
 docker compose ps
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-以上示例将 HTTP 发布在 `127.0.0.1:8788`，IMAPS 发布在 `127.0.0.1:1993`，管理入口为 `/admin/`。云服务器可通过 SSH 隧道访问，或按 [公网部署](PUBLIC.md) 配置 HTTPS 反向代理。首次启动会在 keys 卷中保存管理路径，并生成管理员密码、外部登记接口的 OAuth token、主密钥，以及本地持久化 IMAPS 自签证书。
+以上示例将 HTTP 发布在 `127.0.0.1:17004`，IMAPS 发布在 `127.0.0.1:1993`，管理入口为 `/admin/`。云服务器可通过 SSH 隧道访问，或按 [公网部署](PUBLIC.md) 配置 HTTPS 反向代理。首次启动会在 keys 卷中保存管理路径，并生成管理员密码、外部登记接口的 OAuth token、主密钥，以及本地持久化 IMAPS 自签证书。
 
 ```bash
 docker compose exec -T icloud-api cat /app/keys/admin-password
@@ -61,7 +61,7 @@ docker compose exec -T icloud-api cat /app/keys/public-imap-cert.pem
 
 `admin-path` 支持 `/admin/` 或 `/<32位小写十六进制>/admin/`。新安装可通过 `ICLOUD_API_ADMIN_PATH=/admin` 指定短路径；未设置时生成随机路径。现有安装切换路径需先备份并停止应用，同时更新环境设置和 keys 卷中的 `admin-path` 文件，保留文件权限与属主，再启动。管理界面、静态资源和前端路由跟随配置路径，管理 API 的入口是去掉该值结尾 `/` 后再拼接 `/api/v1`。OpenAPI 的 `{admin_path}` 变量使用去掉首尾 `/` 的值。随机路径模式仍保留 `/admin/api/v1` 兼容 API；短路径模式使用同一个管理入口。两种模式均执行登录限流、会话认证和 CSRF 校验，Cookie 受管理路径限制。管理响应默认使用 `Cache-Control: no-store, private`，返回明文凭证的处理器会覆盖为 `no-store`。
 
-使用 `admin` 和首次生成的密码登录管理路径，添加 iCloud 主号后同步或手动登记隐私邮箱。管理端支持创建邮箱分组，并在“全部隐私邮箱”或主号详情中把单个、勾选的隐私邮箱移动到所选分组；删除分组不会删除邮箱，只会将其恢复为未分组。对已完成 Apple 登录且主号没有同步错误的 iCloud 隐私邮箱，可以在“全部隐私邮箱”中勾选后执行“从 Apple 删除”：服务会先调用 Apple 的停用/永久删除流程，只有 Apple 确认删除成功后才清理本地记录；明确失败的项目会保留对应项并返回逐项错误。批量操作支持后台任务及状态轮询；任务中断后尚无结果的项目，其远端结果待核查，详见下方“批量 Apple 删除后台任务”。自定义邮箱不走此 Apple 删除流程。公开接口说明位于 <http://127.0.0.1:8788/docs/>，机器可读契约见 [`docs/openapi.yaml`](openapi.yaml)。
+使用 `admin` 和首次生成的密码登录管理路径，添加 iCloud 主号后同步或手动登记隐私邮箱。管理端支持创建邮箱分组，并在“全部隐私邮箱”或主号详情中把单个、勾选的隐私邮箱移动到所选分组；删除分组不会删除邮箱，只会将其恢复为未分组。对已完成 Apple 登录且主号没有同步错误的 iCloud 隐私邮箱，可以在“全部隐私邮箱”中勾选后执行“从 Apple 删除”：服务会先调用 Apple 的停用/永久删除流程，只有 Apple 确认删除成功后才清理本地记录；明确失败的项目会保留对应项并返回逐项错误。批量操作支持后台任务及状态轮询；任务中断后尚无结果的项目，其远端结果待核查，详见下方“批量 Apple 删除后台任务”。自定义邮箱不走此 Apple 删除流程。公开接口说明位于 <http://127.0.0.1:17004/docs/>，机器可读契约见 [`docs/openapi.yaml`](openapi.yaml)。
 
 每个主号可配置上游隐式 TLS IMAP 主机、端口和登录用户名，默认是 `imap.mail.me.com:993`。已有隐私邮箱后仍可修改这三项，但这代表切换邮箱来源：服务会清除该主号旧来源的同步游标、v1 快照、消费与 `Seen` 状态、v2 归档和 OTP 历史，轮换公开 IMAPS 的 `UIDVALIDITY`，再从新来源建立不回填历史的基线。单纯修改 IMAP 密码（直连 iCloud 使用 App 专用密码，第三方转发使用第三方 IMAP 密码）或重新启用主号只重置同步状态，不删除已有邮件。已有隐私邮箱后主号邮箱地址仍不可修改。
 
@@ -259,7 +259,7 @@ ICLOUD_API_PUBLIC_IMAP_SERVER_NAME=imap.example.com
 
 Compose 默认把 HTTP 和 IMAPS 都绑定在宿主机回环地址。对外服务时：
 
-1. 用 HTTPS 反向代理转发 `127.0.0.1:8788`，保留外部 `Host`、`Origin` 和协议。
+1. 用 HTTPS 反向代理转发 `127.0.0.1:17004`，保留外部 `Host`、`Origin` 和协议。
 2. 设置 `ICLOUD_API_COOKIE_SECURE=true`，并把 `ICLOUD_API_TRUSTED_PROXIES` 收紧为实际代理地址或网段。
 3. 通过防火墙受控开放 IMAPS；可把宿主机 `993` 映射到容器 `1993`，也可使用支持 TLS 透传的 TCP 代理。
 4. 将生产证书和私钥通过只读 bind mount、Compose secret 或受保护的 keys 卷提供给容器，再设置证书路径与服务器名称。
@@ -268,7 +268,7 @@ Nginx 的 HTTP 反向代理至少保留：
 
 ```nginx
 location / {
-    proxy_pass http://127.0.0.1:8788;
+    proxy_pass http://127.0.0.1:17004;
     proxy_set_header Host $http_host;
     proxy_set_header Origin $http_origin;
     proxy_set_header X-Real-IP $remote_addr;
@@ -308,7 +308,7 @@ location / {
 
 | 环境变量 | 默认值 | 说明 |
 | --- | ---: | --- |
-| `ICLOUD_API_PORT` | `8080` | Compose 的宿主机 HTTP 回环端口 |
+| `ICLOUD_API_PORT` | `17004` | Compose 的宿主机 HTTP 回环端口 |
 | `ICLOUD_API_IMAPS_PORT` | `1993` | Compose 的宿主机 IMAPS 回环端口 |
 | `ICLOUD_API_MAIL_CONTENT_LIMIT_BYTES` | `10737418240` | 全局 MIME 内容容量 |
 | `ICLOUD_API_MAX_MESSAGE_BYTES` | `104857600` | 单封邮件硬上限，最大 100 MiB |
@@ -367,7 +367,7 @@ docker compose start icloud-api
 ```bash
 docker compose up -d --build --wait
 docker compose ps
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS http://127.0.0.1:17004/healthz
 docker compose exec -T icloud-api cat /app/keys/admin-path
 ```
 

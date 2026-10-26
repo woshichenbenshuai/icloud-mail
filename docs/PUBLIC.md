@@ -1,12 +1,12 @@
 # 使用自己的域名部署
 
-以下以 `mail.example.com` 和 HTTP 回环端口 `8788` 为例。先按 [交付说明](../DELIVERY.md) 启动服务并确认本机健康检查成功。
+以下以 `mail.example.com` 和 HTTP 回环端口 `17004` 为例。先按 [交付说明](../DELIVERY.md) 启动服务并确认本机健康检查成功。
 
 ## Web/API 与控制面板
 
 1. 将自己的域名解析到服务器公网 IP。
 2. 在宝塔、Nginx 或现有反向代理中创建该域名的站点，申请覆盖该域名的 Let's Encrypt 证书。
-3. HTTPS 反向代理指向 `http://127.0.0.1:8788`。宝塔中的 SSL 证书用于 Web 代理；仅使用 HTTP API 时无需配置应用内 IMAPS 证书。
+3. HTTPS 反向代理指向 `http://127.0.0.1:17004`。宝塔中的 SSL 证书用于 Web 代理；仅使用 HTTP API 时无需配置应用内 IMAPS 证书。
 4. 在 `.env` 设置 `ICLOUD_API_COOKIE_SECURE=true`，重建应用容器使设置生效。保持单实例。
 
 GHCR `latest` 安装：
@@ -32,7 +32,7 @@ Nginx 的 HTTPS 站点至少配置以下代理内容。证书路径使用该站�
 
 ```nginx
 location / {
-    proxy_pass http://127.0.0.1:8788;
+    proxy_pass http://127.0.0.1:17004;
     proxy_set_header Host $http_host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
