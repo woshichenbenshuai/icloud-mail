@@ -69,13 +69,13 @@ By default, this pulls `ghcr.io/t508708/icloud-mail:latest` and the accompanying
 
 ### 2. Open the Dashboard
 
-With the example configuration, open **http://SERVER_IP:17004/admin/** (or `http://your-domain:17004/admin/`); the username is `admin`. Allow TCP port 17004 in the server firewall and cloud security group. Keep `ICLOUD_API_COOKIE_SECURE=false` for direct HTTP access; set it to `true` when accessing through HTTPS. Retrieve the password generated on first startup:
+With the example configuration, the dashboard is at **http://127.0.0.1:17004/admin/** and the username is `admin`. Retrieve the password generated on first startup:
 
 ```sh
 docker compose exec -T icloud-api cat /app/keys/admin-password
 ```
 
-To restrict HTTP access to the local machine or a proxy, set `ICLOUD_API_BIND_ADDR=127.0.0.1` in `.env` and recreate the app container. An SSH tunnel is optional in that setup:
+For a remote server, establish an SSH tunnel from your own computer, then open the address above:
 
 ```sh
 ssh -N -L 127.0.0.1:17004:127.0.0.1:17004 USER@SERVER

@@ -11,8 +11,8 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "${ICLOUD_API_BIND_ADDR:-0.0.0.0}:${ICLOUD_API_PORT:-17004}:8080"
-      - "${ICLOUD_API_IMAPS_BIND_ADDR:-127.0.0.1}:${ICLOUD_API_IMAPS_PORT:-1993}:1993"
+      - "127.0.0.1:${ICLOUD_API_PORT:-17004}:8080"
+      - "127.0.0.1:${ICLOUD_API_IMAPS_PORT:-1993}:1993"
     environment:
       GIN_MODE: release
       ICLOUD_API_ADDR: 0.0.0.0:8080
@@ -49,9 +49,10 @@ services:
       ICLOUD_API_OTP_RETURN_LAST_ONLY: ${ICLOUD_API_OTP_RETURN_LAST_ONLY:-false}
       ICLOUD_API_OTP_RETURN_LATEST_ONLY: ${ICLOUD_API_OTP_RETURN_LATEST_ONLY:-}
       ICLOUD_API_ALLOW_WEAK_RECIPIENT_HEADERS: ${ICLOUD_API_ALLOW_WEAK_RECIPIENT_HEADERS:-false}
-      # Direct requests do not need trusted proxies. For reverse proxies, set
-      # the exact proxy IP or CIDR so forwarded client addresses are accepted.
-      ICLOUD_API_TRUSTED_PROXIES: ${ICLOUD_API_TRUSTED_PROXIES:-}
+      # The port is published on host loopback only. Trust the Docker bridge so
+      # the 1Panel proxy's X-Forwarded-For value can restore the client IP.
+      # Override this with the exact bridge gateway or CIDR when known.
+      ICLOUD_API_TRUSTED_PROXIES: ${ICLOUD_API_TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       TZ: ${TZ:-Asia/Shanghai}
     volumes:
       - postgres_socket:/var/run/postgresql:ro

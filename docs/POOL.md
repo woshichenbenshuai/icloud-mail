@@ -221,7 +221,7 @@ docker compose ps
 curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-新安装可通过 `http://SERVER_IP:17004` 或自己的 Web/API 域名直接访问；服务器防火墙和云安全组需放行 TCP 17004。HTTPS 反向代理仍转发到 `127.0.0.1:17004`，并启用 HTTPS Cookie。公开 IMAPS 使用独立域名及 TLS 证书，具体见 [公网部署](PUBLIC.md)。
+新安装使用自己的 Web/API 域名，例如 `mail.example.com`。HTTPS 反向代理转发到 `127.0.0.1:17004`；公网启用 HTTPS Cookie。公开 IMAPS 使用独立域名及 TLS 证书，具体见 [公网部署](PUBLIC.md)。
 
 获取管理入口和管理员密码：
 
