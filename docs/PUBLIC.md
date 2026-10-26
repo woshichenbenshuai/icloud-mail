@@ -1,6 +1,6 @@
 # 使用自己的域名部署
 
-以下以 `mail.example.com` 和 HTTP 回环端口 `17004` 为例。先按 [交付说明](../DELIVERY.md) 启动服务并确认本机健康检查成功。
+默认示例将 HTTP 发布到宿主机所有 IPv4 地址的 `17004` 端口，可直接通过 `http://SERVER_IP:17004/admin/` 或 `http://mail.example.com:17004/admin/` 访问。请在服务器防火墙和云安全组放行 TCP 17004。HTTP 直连保持 `ICLOUD_API_COOKIE_SECURE=false`；若使用 HTTPS 反向代理则设置为 `true`。先按 [交付说明](../DELIVERY.md) 启动服务并确认本机健康检查成功。
 
 ## Web/API 与控制面板
 
@@ -8,6 +8,8 @@
 2. 在宝塔、Nginx 或现有反向代理中创建该域名的站点，申请覆盖该域名的 Let's Encrypt 证书。
 3. HTTPS 反向代理指向 `http://127.0.0.1:17004`。宝塔中的 SSL 证书用于 Web 代理；仅使用 HTTP API 时无需配置应用内 IMAPS 证书。
 4. 在 `.env` 设置 `ICLOUD_API_COOKIE_SECURE=true`，重建应用容器使设置生效。保持单实例。
+
+如希望 HTTP 仅允许本机或反向代理连接，可在 `.env` 设置 `ICLOUD_API_BIND_ADDR=127.0.0.1` 并重建应用容器；公网直连方案则保留默认 `0.0.0.0` 绑定。
 
 GHCR `latest` 安装：
 
@@ -72,7 +74,7 @@ ICLOUD_API_PUBLIC_IMAP_TLS_KEY_FILE=/app/public-tls/privkey.pem
 ```
 
 4. 启动时增加 `-f compose.public.yaml` 挂载证书目录；源码构建同时增加 `-f compose.build.yaml`，历史离线包同时增加 `-f compose.offline.yaml`。
-5. 用 Nginx stream 等 TCP 透传代理将公网 `993` 转发到 `127.0.0.1:1993`，放通相应防火墙端口；TLS 握手由应用完成。
+5. 用 Nginx stream 等 TCP 透传代理将公网 `993` 转发到 `127.0.0.1:1993`，放通相应防火墙端口；TLS 握手由应用完成。也可在 `.env` 设置 `ICLOUD_API_IMAPS_BIND_ADDR=0.0.0.0` 直接发布 IMAPS；默认端口为 `1993`，如需标准端口可同时设置 `ICLOUD_API_IMAPS_PORT=993`，并放行对应端口。
 6. 证书续期后同步更新挂载文件，并重建应用以加载新证书。
 
 ```sh

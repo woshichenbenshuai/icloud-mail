@@ -31,7 +31,7 @@ docker compose -f compose.yaml -f compose.build.yaml ps
 curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-构建阶段需要访问 Docker 基础镜像、Go 模块和 npm 依赖源。复制示例配置后，HTTP 发布到 `127.0.0.1:17004`，IMAPS 发布到 `127.0.0.1:1993`。前端 JS/CSS 随镜像本地提供；运行时仍需访问 Apple/iCloud 或配置的上游 IMAP 服务。
+构建阶段需要访问 Docker 基础镜像、Go 模块和 npm 依赖源。复制示例配置后，HTTP 发布到 `0.0.0.0:17004`，可通过 `http://SERVER_IP:17004/admin/` 或 `http://域名:17004/admin/` 访问；需在服务器防火墙和云安全组放行 TCP 17004。IMAPS 默认仅发布到本机 `127.0.0.1:1993`。前端 JS/CSS 随镜像本地提供；运行时仍需访问 Apple/iCloud 或配置的上游 IMAP 服务。
 
 ## 首次登录
 
@@ -42,9 +42,9 @@ docker compose exec -T icloud-api cat /app/keys/admin-password
 docker compose exec -T icloud-api cat /app/keys/admin-path
 ```
 
-用户名为 `admin`。使用 `.env.example` 时管理入口为 `http://127.0.0.1:17004/admin/`。首次接入在主号管理中添加 Apple 账号并完成连接；直连 iCloud IMAP 使用 Apple App 专用密码，第三方 IMAP 使用该服务自己的凭据。
+用户名为 `admin`。使用 `.env.example` 时管理入口为 `http://SERVER_IP:17004/admin/` 或 `http://域名:17004/admin/`。HTTP 直连保持 `ICLOUD_API_COOKIE_SECURE=false`；若使用 HTTPS 反向代理则设为 `true`。首次接入在主号管理中添加 Apple 账号并完成连接；直连 iCloud IMAP 使用 Apple App 专用密码，第三方 IMAP 使用该服务自己的凭据。
 
-云服务器可在自己的电脑建立 SSH 隧道：
+如需将 HTTP 限制为本机/代理访问，可设置 `ICLOUD_API_BIND_ADDR=127.0.0.1` 并重建应用容器，此时可选用 SSH 隧道：
 
 ```sh
 ssh -N -L 127.0.0.1:17004:127.0.0.1:17004 USER@SERVER

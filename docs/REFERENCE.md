@@ -4,7 +4,7 @@
 
 项目地址：<https://github.com/t508708/icloud-mail>。本项目基于 [mangobubu/icloud-api](https://github.com/mangobubu/icloud-api)；来源与当前许可状态见 [NOTICE.md](../NOTICE.md)。
 
-包含 Web 控制面板、项目 Key、批量自动取号、幂等领取、确认/释放/续期、凭据联动轮换和定时创建。首次安装和交付包使用请先阅读 [交付与安装](../DELIVERY.md)，邮箱池说明见 [邮箱池](POOL.md)。复制 `.env.example` 后 HTTP 端口为 `17004`；不使用环境文件时 Compose 的默认宿主机端口为 `17004`。
+包含 Web 控制面板、项目 Key、批量自动取号、幂等领取、确认/释放/续期、凭据联动轮换和定时创建。首次安装和交付包使用请先阅读 [交付与安装](../DELIVERY.md)，邮箱池说明见 [邮箱池](POOL.md)。复制 `.env.example` 后 HTTP 在宿主机 `0.0.0.0:17004` 发布；不使用环境文件时默认宿主机端口同为 `17004`。可通过 `http://SERVER_IP:17004/admin/` 直接访问；防火墙和云安全组需放行 TCP 17004。
 
 本服务把 iCloud 隐私邮箱的新邮件归档到本地，并且只向外提供两种取件能力：
 
@@ -50,7 +50,7 @@ docker compose ps
 curl -fsS http://127.0.0.1:17004/healthz
 ```
 
-以上示例将 HTTP 发布在 `127.0.0.1:17004`，IMAPS 发布在 `127.0.0.1:1993`，管理入口为 `/admin/`。云服务器可通过 SSH 隧道访问，或按 [公网部署](PUBLIC.md) 配置 HTTPS 反向代理。首次启动会在 keys 卷中保存管理路径，并生成管理员密码、外部登记接口的 OAuth token、主密钥，以及本地持久化 IMAPS 自签证书。
+以上示例将 HTTP 发布在 `0.0.0.0:17004`，IMAPS 发布在 `127.0.0.1:1993`，管理入口为 `/admin/`。HTTP 直连使用 `ICLOUD_API_COOKIE_SECURE=false`；HTTPS 反向代理则设为 `true`。如需限制 HTTP 为本机/代理访问，可设 `ICLOUD_API_BIND_ADDR=127.0.0.1` 后重建容器，再选择 SSH 隧道或 [公网部署](PUBLIC.md) 的 HTTPS 反向代理。首次启动会在 keys 卷中保存管理路径，并生成管理员密码、外部登记接口的 OAuth token、主密钥，以及本地持久化 IMAPS 自签证书。
 
 ```bash
 docker compose exec -T icloud-api cat /app/keys/admin-password
@@ -257,11 +257,11 @@ ICLOUD_API_PUBLIC_IMAP_SERVER_NAME=imap.example.com
 
 ## 生产部署
 
-Compose 默认把 HTTP 和 IMAPS 都绑定在宿主机回环地址。对外服务时：
+Compose 默认通过 `0.0.0.0:17004` 对外发布 HTTP，IMAPS 默认仍绑定宿主机回环地址。直接 HTTP 访问应保持 `ICLOUD_API_COOKIE_SECURE=false`；HTTPS 代理部署应设为 `true`。使用代理时：
 
 1. 用 HTTPS 反向代理转发 `127.0.0.1:17004`，保留外部 `Host`、`Origin` 和协议。
-2. 设置 `ICLOUD_API_COOKIE_SECURE=true`，并把 `ICLOUD_API_TRUSTED_PROXIES` 收紧为实际代理地址或网段。
-3. 通过防火墙受控开放 IMAPS；可把宿主机 `993` 映射到容器 `1993`，也可使用支持 TLS 透传的 TCP 代理。
+2. 把 `ICLOUD_API_TRUSTED_PROXIES` 设置为实际代理 IP/CIDR；默认值为空。
+3. 如需直连公开 IMAPS，将 `ICLOUD_API_IMAPS_BIND_ADDR=0.0.0.0`，通过防火墙受控开放 IMAPS；可把宿主机 `993` 映射到容器 `1993`，也可使用支持 TLS 透传的 TCP 代理。
 4. 将生产证书和私钥通过只读 bind mount、Compose secret 或受保护的 keys 卷提供给容器，再设置证书路径与服务器名称。
 
 Nginx 的 HTTP 反向代理至少保留：
@@ -308,8 +308,10 @@ location / {
 
 | 环境变量 | 默认值 | 说明 |
 | --- | ---: | --- |
-| `ICLOUD_API_PORT` | `17004` | Compose 的宿主机 HTTP 回环端口 |
-| `ICLOUD_API_IMAPS_PORT` | `1993` | Compose 的宿主机 IMAPS 回环端口 |
+| `ICLOUD_API_PORT` | `17004` | Compose 宿主机 HTTP 端口 |
+| `ICLOUD_API_BIND_ADDR` | `0.0.0.0` | Compose 宿主机 HTTP 绑定地址；设为 `127.0.0.1` 可限制为本机/代理 |
+| `ICLOUD_API_IMAPS_BIND_ADDR` | `127.0.0.1` | Compose 宿主机 IMAPS 绑定地址；设为 `0.0.0.0` 可对外发布 |
+| `ICLOUD_API_IMAPS_PORT` | `1993` | Compose 的宿主机 IMAPS 端口 |
 | `ICLOUD_API_MAIL_CONTENT_LIMIT_BYTES` | `10737418240` | 全局 MIME 内容容量 |
 | `ICLOUD_API_MAX_MESSAGE_BYTES` | `104857600` | 单封邮件硬上限，最大 100 MiB |
 | `ICLOUD_API_MAX_BODY_BYTES` | `524288` | OTP/MIME 元数据解析时的正文预算 |
@@ -328,7 +330,7 @@ location / {
 | `ICLOUD_API_SYNC_CONCURRENCY` | `3` | 同步并发数，范围 1–16 |
 | `ICLOUD_API_SESSION_TTL` | `8h` | 管理端会话有效期 |
 | `ICLOUD_API_COOKIE_SECURE` | `false` | HTTPS 生产部署应设为 `true` |
-| `ICLOUD_API_TRUSTED_PROXIES` | 私有网段 | 受信反向代理 IP/CIDR，生产环境应收紧 |
+| `ICLOUD_API_TRUSTED_PROXIES` | 空 | 受信反向代理 IP/CIDR；反向代理部署时配置实际代理地址 |
 | `ICLOUD_API_ALLOW_WEAK_RECIPIENT_HEADERS` | `false` | 是否接受弱收件人头；保持默认值 |
 | `TZ` | `Asia/Shanghai` | OTP API 输出时间所用时区 |
 
