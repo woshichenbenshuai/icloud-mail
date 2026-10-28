@@ -137,10 +137,12 @@ Apple 调用按账号组织：同一账号逐条处理，复用会话校验（va
 
 新建或已领取 v2 凭证的隐私邮箱会显示完整的 API Key、IMAP 密码、client ID 和 refresh token。迁移前已经领取的 legacy alias 只显示已有 Key 前缀和旧直达链接，不会伪造不存在的 v2 凭证。管理端支持单条、勾选批量和全部复制；输出一行一个邮箱、无表头。
 
-取码链接严格使用五个横线：
+主号详情页可勾选邮箱后，点击列表上方的“导出取码数据”，下载 TXT 文件；包含跨页勾选的邮箱，每行一条，无表头。
+
+取码链接严格使用四个横线：
 
 ```text
-alias@example.com-----https://HOST/api/v1/otp?token=DERIVED_TOKEN
+alias@example.com----https://HOST/api/v1/otp?token=DERIVED_TOKEN
 ```
 
 IMAP/OAuth 严格使用四个横线：
@@ -281,7 +283,7 @@ location / {
 
 ## 从 Outlook / Graph 客户端迁移
 
-只需要验证码的调用方应直接改用管理端导出的五横线取码 URL；原先使用 Graph 获取完整邮件的调用方可迁移到只读 IMAPS。已经具备 Outlook IMAP OAuth2 分支的客户端通常只需：
+只需要验证码的调用方应直接改用管理端导出的四横线取码 URL；原先使用 Graph 获取完整邮件的调用方可迁移到只读 IMAPS。已经具备 Outlook IMAP OAuth2 分支的客户端通常只需：
 
 - 把令牌地址改为本服务的 `/oauth2/v2.0/token`。
 - 表单只发送 `grant_type`、`client_id`、`refresh_token`，移除 Microsoft `scope`。

@@ -33,7 +33,7 @@ export function buildAliasExportLine(
   const address = field(alias?.address, "邮箱地址");
   if (format === ALIAS_EXPORT_OTP) {
     const link = buildAliasReceiveLink(alias, origin);
-    return `${address}-----${link}`;
+    return `${address}----${link}`;
   }
   if (format === ALIAS_EXPORT_IMAP) {
     return `${address}----${field(alias?.imapPassword, "IMAP 密码")}----${field(

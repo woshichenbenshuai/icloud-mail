@@ -27,7 +27,7 @@ function functionBody(source, signature) {
   assert.fail(`unterminated body for ${signature}`);
 }
 
-test("OTP export uses five hyphens, absolute links, one line per alias, and no header", () => {
+test("OTP export uses four hyphens, absolute links, one line per alias, and no header", () => {
   const exported = buildAliasExportText(
     [
       {
@@ -46,8 +46,8 @@ test("OTP export uses five hyphens, absolute links, one line per alias, and no h
   assert.equal(
     exported,
     [
-      "first@icloud.com-----https://mail.example.test:8443/api/v1/otp?token=first-token",
-      "second@icloud.com-----https://mail.example.test:8443/api/v1/otp?token=second%2Btoken",
+      "first@icloud.com----https://mail.example.test:8443/api/v1/otp?token=first-token",
+      "second@icloud.com----https://mail.example.test:8443/api/v1/otp?token=second%2Btoken",
     ].join("\r\n"),
   );
 });

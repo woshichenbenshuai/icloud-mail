@@ -483,6 +483,12 @@
           </div>
           <el-button
             v-if="!isCustomMailbox"
+            :icon="Download"
+            :disabled="!selectedAliasIds.length || aliasSelectionBusy || detailMutationPending()"
+            @click="exportSelectedAliases"
+          >导出取码数据</el-button>
+          <el-button
+            v-if="!isCustomMailbox"
             class="account-alias-delete-button"
             type="danger"
             :disabled="!selectedAliasIds.length || loading || detailMutationPending()"
@@ -887,6 +893,7 @@ import {
   Back,
   CopyDocument,
   Delete,
+  Download,
   EditPen,
   Key,
   Plus,
@@ -954,6 +961,7 @@ import {
   buildAliasExportText,
 } from "../utils/aliasExport.js";
 import { buildRecentMailDirectLink, copyText } from "../utils/clipboard.js";
+import { downloadText } from "../utils/download.js";
 import {
   confirmationCancelled,
   showRequestError,
@@ -1476,6 +1484,27 @@ function invertCurrentPageSelection() {
 
 function applyAliasEnabledFilter() {
   resetAliasSearchResults();
+}
+
+function exportSelectedAliases() {
+  if (!viewActive || !selectedAliasIds.value.length || aliasSelectionBusy.value || detailMutationPending()) return;
+  const selected = [...selectedAliasRecords.value.values()];
+  if (selected.some((alias) => String(alias.accountId) !== detailRouteKey() || isAliasConfirmationPending(alias))) {
+    ElMessage.warning("所选邮箱状态已变化，请刷新后重新选择。");
+    return;
+  }
+  try {
+    const content = buildAliasExportText(selected, ALIAS_EXPORT_OTP);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    downloadText(content, `icloud-otp-${account.value.id}-${timestamp}.txt`);
+    successMessage(`已导出勾选的 ${selected.length} 个邮箱的取码数据。`);
+  } catch {
+    ElMessage({
+      type: "error",
+      message: "取码数据导出失败，请刷新页面后重试。",
+      grouping: true,
+    });
+  }
 }
 
 async function deleteSelectedAliases() {
