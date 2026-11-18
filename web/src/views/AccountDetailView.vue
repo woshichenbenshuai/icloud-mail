@@ -457,6 +457,23 @@
             />
           </label>
           <el-select
+            v-model="aliasGroupFilter"
+            class="account-alias-search__group"
+            aria-label="邮箱分组筛选"
+            placeholder="全部分组"
+            :loading="groupsLoading"
+            @change="applyAliasGroupFilter"
+          >
+            <el-option label="全部分组" value="" />
+            <el-option label="未分组" value="none" />
+            <el-option
+              v-for="group in groups"
+              :key="group.id"
+              :label="group.name"
+              :value="String(group.id)"
+            />
+          </el-select>
+          <el-select
             v-model="aliasEnabledFilter"
             class="account-alias-search__status"
             aria-label="邮箱状态筛选"
@@ -806,23 +823,23 @@
           v-if="!loading && !loadError && aliases.length === 0"
           class="empty-state--compact"
           level="h3"
-          :title="appliedAliasQuery
+          :title="hasAppliedAliasFilters
             ? '没有匹配的隐私邮箱'
             : isCustomMailbox
               ? '尚未生成邮箱'
               : '尚未登记隐私邮箱'"
-          :description="appliedAliasQuery
-            ? '请尝试其他关键词，或清空搜索后查看全部邮箱。'
+          :description="hasAppliedAliasFilters
+            ? '请调整关键词、分组或状态，或清空筛选后查看全部邮箱。'
             : isCustomMailbox
               ? '输入生成数量批量创建，或在下方手动登记一个邮箱地址。'
               : '添加一个已经转发到此主号的 Hide My Email 地址。'"
         >
           <el-button
-            v-if="appliedAliasQuery"
+            v-if="hasAppliedAliasFilters"
             :icon="RefreshLeft"
             @click="clearAliasSearch"
           >
-            清空搜索
+            清空筛选
           </el-button>
         </EmptyState>
 
@@ -1007,6 +1024,7 @@ const total = ref(0);
 const aliasQueryDraft = ref("");
 const appliedAliasQuery = ref("");
 const aliasEnabledFilter = ref("");
+const aliasGroupFilter = ref("");
 const selectedAliasRecords = ref(new Map());
 const selectedAliasIds = computed(() => [...selectedAliasRecords.value.keys()]);
 const aliasSelectionContainer = ref(null);
@@ -1061,11 +1079,14 @@ let resumeAliasSyncAfterAuth = false;
 let resumeAutoCreationAfterAuth = false;
 
 const syncActive = computed(() => Boolean(account.value?.syncProgress?.active));
+const hasAppliedAliasFilters = computed(() =>
+  Boolean(appliedAliasQuery.value || aliasEnabledFilter.value || aliasGroupFilter.value),
+);
 const hasAliasSearch = computed(() =>
-  Boolean(aliasQueryDraft.value.trim() || appliedAliasQuery.value || aliasEnabledFilter.value),
+  Boolean(aliasQueryDraft.value.trim() || hasAppliedAliasFilters.value),
 );
 const selectableAliases = computed(() => aliases.value.filter((alias) =>
-  String(alias.accountId) === detailRouteKey() && !isAliasConfirmationPending(alias),
+  String(alias.accountId) === detailRouteKey() && matchesAliasGroupFilter(alias) && !isAliasConfirmationPending(alias),
 ));
 const allAliasesSelected = computed(() => selectableAliases.value.length > 0 &&
   selectableAliases.value.every((alias) => selectedAliasIds.value.includes(alias.id)),
@@ -1471,7 +1492,14 @@ function detailRequestKey(
   selectedPageSize = pageSize.value,
   query = appliedAliasQuery.value,
 ) {
-  return `${accountId}\u0000${query}\u0000${aliasEnabledFilter.value}\u0000${page}\u0000${selectedPageSize}`;
+  return `${accountId}\u0000${query}\u0000${aliasEnabledFilter.value}\u0000${aliasGroupFilter.value}\u0000${page}\u0000${selectedPageSize}`;
+}
+
+function matchesAliasGroupFilter(alias) {
+  if (!aliasGroupFilter.value) return true;
+  return aliasGroupFilter.value === "none"
+    ? alias.groupId == null
+    : String(alias.groupId) === aliasGroupFilter.value;
 }
 
 function clearAliasSelection() {
@@ -1503,6 +1531,10 @@ function invertCurrentPageSelection() {
 }
 
 function applyAliasEnabledFilter() {
+  resetAliasSearchResults();
+}
+
+function applyAliasGroupFilter() {
   resetAliasSearchResults();
 }
 
@@ -1610,6 +1642,7 @@ async function loadDetail({ silent = false } = {}) {
   const selectedPageSize = pageSize.value;
   const query = appliedAliasQuery.value;
   const enabled = aliasEnabledFilter.value === "" ? undefined : aliasEnabledFilter.value === "true";
+  const groupId = aliasGroupFilter.value;
   const requestKey = detailRequestKey(accountId, page, selectedPageSize, query);
   const ticket = detailGate.begin(requestKey);
   detailAbortController?.abort();
@@ -1634,9 +1667,10 @@ async function loadDetail({ silent = false } = {}) {
           signal: abortController.signal,
           query,
           enabled,
+          groupId,
         }),
       ]);
-    } else if (query || enabled !== undefined) {
+    } else if (query || enabled !== undefined || groupId) {
       [detail, aliasPage] = await Promise.all([
         // Keep the account request focused on metadata. Its alias count is
         // the unfiltered total used by the automatic-creation panel.
@@ -1650,6 +1684,7 @@ async function loadDetail({ silent = false } = {}) {
           offset: (page - 1) * selectedPageSize,
           query,
           enabled,
+          groupId,
           signal: abortController.signal,
         }),
       ]);
@@ -1783,6 +1818,7 @@ function clearAliasSearch() {
   aliasQueryDraft.value = "";
   appliedAliasQuery.value = "";
   aliasEnabledFilter.value = "";
+  aliasGroupFilter.value = "";
   resetAliasSearchResults();
 }
 
@@ -2499,6 +2535,13 @@ async function moveAliasToGroup(alias, groupValue) {
     );
     if (!isCurrentAccount(accountId)) return;
     replaceAlias(updated);
+    const nextSelected = new Map(selectedAliasRecords.value);
+    if (nextSelected.has(updated.id)) {
+      if (matchesAliasGroupFilter(updated)) nextSelected.set(updated.id, updated);
+      else nextSelected.delete(updated.id);
+      selectedAliasRecords.value = nextSelected;
+    }
+    if (aliasGroupFilter.value) await loadDetail();
     await loadMailGroups();
     successMessage("隐私邮箱分组已更新。");
   } catch (error) {
@@ -2780,6 +2823,11 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.account-alias-search__group {
+  flex: 0 0 150px;
+  width: 150px;
 }
 
 .account-alias-search__status {
